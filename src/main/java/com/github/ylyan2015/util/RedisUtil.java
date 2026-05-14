@@ -8,13 +8,18 @@ import javax.annotation.Resource;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Redis工具类
+ */
 @Component
 public class RedisUtil {
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
-    // 指定过期时间
+    /**
+     * 设置过期时间
+     */
     public boolean expire(String key, long time) {
         try {
             if (time > 0) {
@@ -27,12 +32,16 @@ public class RedisUtil {
         }
     }
 
-    // 获取过期时间
+    /**
+     * 获取过期时间
+     */
     public long getExpire(String key) {
         return redisTemplate.getExpire(key, TimeUnit.SECONDS);
     }
 
-    // 判断key是否存在
+    /**
+     * 判断key是否存在
+     */
     public boolean hasKey(String key) {
         try {
             return redisTemplate.hasKey(key);
@@ -42,7 +51,9 @@ public class RedisUtil {
         }
     }
 
-    // 删除缓存
+    /**
+     * 删除缓存
+     */
     @SuppressWarnings("unchecked")
     public void del(String... key) {
         if (key != null && key.length > 0) {
@@ -54,12 +65,16 @@ public class RedisUtil {
         }
     }
 
-    // 获取缓存
+    /**
+     * 获取缓存
+     */
     public Object get(String key) {
         return key == null ? null : redisTemplate.opsForValue().get(key);
     }
 
-    // 设置缓存
+    /**
+     * 设置缓存
+     */
     public boolean set(String key, Object value) {
         try {
             redisTemplate.opsForValue().set(key, value);
@@ -70,7 +85,9 @@ public class RedisUtil {
         }
     }
 
-    // 设置缓存+过期时间
+    /**
+     * 设置缓存并指定过期时间
+     */
     public boolean set(String key, Object value, long time) {
         try {
             if (time > 0) {

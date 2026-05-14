@@ -5,10 +5,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
+/**
+ * 应用启动类
+ */
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients
 public class SpringCloudDemoApplication {
+    
+    /**
+     * 主方法入口
+     */
     public static void main(String[] args) {
         SpringApplication.run(SpringCloudDemoApplication.class, args);
     }
