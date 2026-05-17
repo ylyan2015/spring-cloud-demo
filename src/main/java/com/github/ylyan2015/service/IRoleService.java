@@ -35,4 +35,14 @@ public interface IRoleService {
      * 查询所有角色
      */
     Result<List<RoleDto>> getAllRoles();
+
+    /**
+     * 为角色分配菜单
+     */
+    Result<String> assignMenusToRole(Long roleId, List<Long> menuIds);
+
+    /**
+     * 获取角色的菜单ID列表
+     */
+    Result<List<Long>> getRoleMenuIds(Long roleId);
 }

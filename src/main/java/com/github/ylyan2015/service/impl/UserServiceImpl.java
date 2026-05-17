@@ -5,7 +5,7 @@ import com.github.ylyan2015.dao.UserRepository;
 import com.github.ylyan2015.dao.UserRoleRepository;
 import com.github.ylyan2015.dto.UserDto;
 import com.github.ylyan2015.entity.UserEO;
-import com.github.ylyan2015.entity.UserRole;
+import com.github.ylyan2015.entity.UserRoleEO;
 import com.github.ylyan2015.service.IUserService;
 import com.github.ylyan2015.util.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -127,10 +127,10 @@ public class UserServiceImpl implements IUserService {
             
             UserDto userDto = convertToDto(optional.get());
             
-            List<UserRole> userRoles = userRoleRepository.findByUserId(id);
+            List<UserRoleEO> userRoles = userRoleRepository.findByUserId(id);
             if (!userRoles.isEmpty()) {
                 List<Long> roleIds = userRoles.stream()
-                        .map(UserRole::getRoleId)
+                        .map(UserRoleEO::getRoleId)
                         .collect(Collectors.toList());
                 userDto.setRoleIds(roleIds);
             }
@@ -187,9 +187,9 @@ public class UserServiceImpl implements IUserService {
      * 批量分配角色
      */
     private void assignRoles(Long userId, List<Long> roleIds) {
-        List<UserRole> userRoles = roleIds.stream()
+        List<UserRoleEO> userRoles = roleIds.stream()
                 .map(roleId -> {
-                    UserRole userRole = new UserRole();
+                    UserRoleEO userRole = new UserRoleEO();
                     userRole.setUserId(userId);
                     userRole.setRoleId(roleId);
                     return userRole;

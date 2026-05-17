@@ -4,6 +4,7 @@ package com.github.ylyan2015.dto;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 角色数据传输对象
@@ -45,4 +46,9 @@ public class RoleDto {
      * 更新时间
      */
     private LocalDateTime updateTime;
+
+    /**
+     * 菜单ID列表
+     */
+    private List<Long> menuIds;
 }

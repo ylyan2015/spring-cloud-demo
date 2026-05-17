@@ -6,12 +6,12 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * 用户角色关联实体类
+ * 角色菜单关联实体类
  */
 @Data
 @Entity
-@Table(name = "t_user_role")
-public class UserRole {
+@Table(name = "t_role_menu")
+public class RoleMenuEO {
 
     /**
      * 主键ID
@@ -21,16 +21,16 @@ public class UserRole {
     private Long id;
 
     /**
-     * 用户ID
-     */
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
-
-    /**
      * 角色ID
      */
     @Column(name = "role_id", nullable = false)
     private Long roleId;
+
+    /**
+     * 菜单ID
+     */
+    @Column(name = "menu_id", nullable = false)
+    private Long menuId;
 
     /**
      * 创建时间

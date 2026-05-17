@@ -58,4 +58,20 @@ public class RoleController {
     public Result<List<RoleDto>> getAllRoles() {
         return roleService.getAllRoles();
     }
+
+    /**
+     * 为角色分配菜单
+     */
+    @PostMapping("/assign-menus")
+    public Result<String> assignMenus(@RequestParam Long roleId, @RequestBody List<Long> menuIds) {
+        return roleService.assignMenusToRole(roleId, menuIds);
+    }
+
+    /**
+     * 获取角色的菜单ID列表
+     */
+    @GetMapping("/menu-ids/{roleId}")
+    public Result<List<Long>> getRoleMenuIds(@PathVariable Long roleId) {
+        return roleService.getRoleMenuIds(roleId);
+    }
 }

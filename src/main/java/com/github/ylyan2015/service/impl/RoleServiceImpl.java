@@ -4,9 +4,11 @@ package com.github.ylyan2015.service.impl;
 import com.github.ylyan2015.common.Result;
 import com.github.ylyan2015.dao.RoleRepository;
 import com.github.ylyan2015.dao.UserRoleRepository;
+import com.github.ylyan2015.dao.RoleMenuRepository;
 import com.github.ylyan2015.dto.RoleDto;
 import com.github.ylyan2015.entity.RoleEO;
-import com.github.ylyan2015.entity.UserRole;
+import com.github.ylyan2015.entity.UserRoleEO;
+import com.github.ylyan2015.entity.RoleMenuEO;
 import com.github.ylyan2015.service.IRoleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -30,6 +32,9 @@ public class RoleServiceImpl implements IRoleService {
 
     @Resource
     private UserRoleRepository userRoleRepository;
+
+    @Resource
+    private RoleMenuRepository roleMenuRepository;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -84,7 +89,7 @@ public class RoleServiceImpl implements IRoleService {
                 return Result.fail("角色不存在");
             }
 
-            List<UserRole> userRoles = userRoleRepository.findByRoleId(id);
+            List<UserRoleEO> userRoles = userRoleRepository.findByRoleId(id);
             if (!userRoles.isEmpty()) {
                 return Result.fail("该角色已被用户使用，无法删除");
             }
@@ -135,5 +140,55 @@ public class RoleServiceImpl implements IRoleService {
         RoleDto roleDto = new RoleDto();
         BeanUtils.copyProperties(roleEO, roleDto);
         return roleDto;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result<String> assignMenusToRole(Long roleId, List<Long> menuIds) {
+        try {
+            Optional<RoleEO> optional = roleRepository.findById(roleId);
+            if (!optional.isPresent()) {
+                return Result.fail("角色不存在");
+            }
+
+            roleMenuRepository.deleteByRoleId(roleId);
+
+            if (menuIds != null && !menuIds.isEmpty()) {
+                List<RoleMenuEO> roleMenus = menuIds.stream()
+                        .map(menuId -> {
+                            RoleMenuEO roleMenu = new RoleMenuEO();
+                            roleMenu.setRoleId(roleId);
+                            roleMenu.setMenuId(menuId);
+                            return roleMenu;
+                        })
+                        .collect(Collectors.toList());
+                roleMenuRepository.saveAll(roleMenus);
+            }
+
+            return Result.success("分配菜单成功");
+        } catch (Exception e) {
+            log.error("分配菜单失败", e);
+            return Result.fail("分配菜单失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    public Result<List<Long>> getRoleMenuIds(Long roleId) {
+        try {
+            Optional<RoleEO> optional = roleRepository.findById(roleId);
+            if (!optional.isPresent()) {
+                return Result.fail("角色不存在");
+            }
+
+            List<RoleMenuEO> roleMenus = roleMenuRepository.findByRoleId(roleId);
+            List<Long> menuIds = roleMenus.stream()
+                    .map(RoleMenuEO::getMenuId)
+                    .collect(Collectors.toList());
+
+            return Result.success(menuIds);
+        } catch (Exception e) {
+            log.error("查询角色菜单失败", e);
+            return Result.fail("查询角色菜单失败：" + e.getMessage());
+        }
     }
 }
