@@ -109,6 +109,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Bouncy Castle 国密算法支持 -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.70</version>
+        </dependency>
+
         <!-- 测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

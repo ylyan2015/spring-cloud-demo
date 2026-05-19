@@ -8,6 +8,7 @@ import com.github.ylyan2015.entity.UserEO;
 import com.github.ylyan2015.entity.UserRoleEO;
 import com.github.ylyan2015.service.IUserService;
 import com.github.ylyan2015.util.RedisUtil;
+import com.github.ylyan2015.util.SmCryptoUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -34,12 +35,25 @@ public class UserServiceImpl implements IUserService {
     @Resource
     private RedisUtil redisUtil;
 
+    @Resource
+    private SmCryptoUtil smCryptoUtil;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result<UserDto> addUser(UserDto userDto) {
         try {
+            // 校验用户名是否已存在
+            if (userRepository.findByUsername(userDto.getUsername()).isPresent()) {
+                return Result.fail("用户名已存在");
+            }
+            
             UserEO userEO = new UserEO();
             BeanUtils.copyProperties(userDto, userEO);
+            
+            // 对密码进行加密处理
+            String salt = smCryptoUtil.generateSalt();
+            String encryptedPassword = smCryptoUtil.sm3HashWithSalt(userDto.getPassword(), salt);
+            userEO.setPassword(encryptedPassword);
             
             UserEO savedUser = userRepository.save(userEO);
             
@@ -48,6 +62,8 @@ public class UserServiceImpl implements IUserService {
             }
             
             UserDto result = convertToDto(savedUser);
+            // 不返回密码信息
+            result.setPassword(null);
             return Result.success(result);
         } catch (Exception e) {
             log.error("新增用户失败", e);
@@ -64,8 +80,25 @@ public class UserServiceImpl implements IUserService {
                 return Result.fail("用户不存在");
             }
             
+            // 如果修改了用户名，需要校验新用户名是否已被其他用户使用
+            if (userDto.getUsername() != null && !userDto.getUsername().equals(optional.get().getUsername())) {
+                if (userRepository.findByUsernameAndIdNot(userDto.getUsername(), userDto.getId()).isPresent()) {
+                    return Result.fail("用户名已存在");
+                }
+            }
+            
             UserEO userEO = optional.get();
             BeanUtils.copyProperties(userDto, userEO, "id", "createTime");
+            
+            // 如果提供了新密码，则更新密码
+            if (userDto.getPassword() != null && !userDto.getPassword().trim().isEmpty()) {
+                String salt = smCryptoUtil.generateSalt();
+                String encryptedPassword = smCryptoUtil.sm3HashWithSalt(userDto.getPassword(), salt);
+                userEO.setPassword(encryptedPassword);
+            } else {
+                // 保持原密码不变
+                userEO.setPassword(optional.get().getPassword());
+            }
             
             UserEO updatedUser = userRepository.save(userEO);
             
@@ -80,6 +113,8 @@ public class UserServiceImpl implements IUserService {
             redisUtil.del(key);
             
             UserDto result = convertToDto(updatedUser);
+            // 不返回密码信息
+            result.setPassword(null);
             return Result.success(result);
         } catch (Exception e) {
             log.error("修改用户失败", e);
@@ -127,6 +162,8 @@ public class UserServiceImpl implements IUserService {
             }
             
             UserDto userDto = convertToDto(optional.get());
+            // 不返回密码信息
+            userDto.setPassword(null);
             
             String roleCacheKey = "user:role:" + id;
             if (redisUtil.hasKey(roleCacheKey)) {
@@ -162,6 +199,7 @@ public class UserServiceImpl implements IUserService {
             List<UserEO> users = userRepository.findAll();
             List<UserDto> userDtos = users.stream()
                     .map(this::convertToDto)
+                    .peek(dto -> dto.setPassword(null)) // 不返回密码信息
                     .collect(Collectors.toList());
             return Result.success(userDtos);
         } catch (Exception e) {
