@@ -112,10 +112,11 @@ public class UserServiceImpl implements IUserService {
     @Override
     public Result<UserDto> getUserById(Long id) {
         try {
-            String key = "user:" + id;
-            if (redisUtil.hasKey(key)) {
-                Object cached = redisUtil.get(key);
+            String userKey = "user:" + id;
+            if (redisUtil.hasKey(userKey)) {
+                Object cached = redisUtil.get(userKey);
                 if (cached instanceof UserDto) {
+                    log.debug("从缓存获取用户信息，userId: {}", id);
                     return Result.success((UserDto) cached);
                 }
             }
@@ -127,15 +128,26 @@ public class UserServiceImpl implements IUserService {
             
             UserDto userDto = convertToDto(optional.get());
             
-            List<UserRoleEO> userRoles = userRoleRepository.findByUserId(id);
-            if (!userRoles.isEmpty()) {
-                List<Long> roleIds = userRoles.stream()
-                        .map(UserRoleEO::getRoleId)
-                        .collect(Collectors.toList());
-                userDto.setRoleIds(roleIds);
+            String roleCacheKey = "user:role:" + id;
+            if (redisUtil.hasKey(roleCacheKey)) {
+                Object cachedRoles = redisUtil.get(roleCacheKey);
+                if (cachedRoles instanceof List) {
+                    userDto.setRoleIds((List<Long>) cachedRoles);
+                    log.debug("从缓存获取用户角色，userId: {}", id);
+                }
+            } else {
+                List<UserRoleEO> userRoles = userRoleRepository.findByUserId(id);
+                if (!userRoles.isEmpty()) {
+                    List<Long> roleIds = userRoles.stream()
+                            .map(UserRoleEO::getRoleId)
+                            .collect(Collectors.toList());
+                    userDto.setRoleIds(roleIds);
+                    redisUtil.set(roleCacheKey, roleIds, 60);
+                    log.debug("缓存用户角色，userId: {}, 数量: {}", id, roleIds.size());
+                }
             }
             
-            redisUtil.set(key, userDto, 300);
+            redisUtil.set(userKey, userDto, 300);
             
             return Result.success(userDto);
         } catch (Exception e) {
@@ -173,8 +185,9 @@ public class UserServiceImpl implements IUserService {
                 assignRoles(userId, roleIds);
             }
             
-            String key = "user:" + userId;
-            redisUtil.del(key);
+            String userKey = "user:" + userId;
+            String roleCacheKey = "user:role:" + userId;
+            redisUtil.del(userKey, roleCacheKey);
             
             return Result.success("分配角色成功");
         } catch (Exception e) {

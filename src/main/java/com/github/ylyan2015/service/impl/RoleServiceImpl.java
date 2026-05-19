@@ -10,6 +10,7 @@ import com.github.ylyan2015.entity.RoleEO;
 import com.github.ylyan2015.entity.UserRoleEO;
 import com.github.ylyan2015.entity.RoleMenuEO;
 import com.github.ylyan2015.service.IRoleService;
+import com.github.ylyan2015.util.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,9 @@ public class RoleServiceImpl implements IRoleService {
 
     @Resource
     private RoleMenuRepository roleMenuRepository;
+
+    @Resource
+    private RedisUtil redisUtil;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -165,6 +169,9 @@ public class RoleServiceImpl implements IRoleService {
                 roleMenuRepository.saveAll(roleMenus);
             }
 
+            String cacheKey = "role:menu:" + roleId;
+            redisUtil.del(cacheKey);
+
             return Result.success("分配菜单成功");
         } catch (Exception e) {
             log.error("分配菜单失败", e);
@@ -175,6 +182,15 @@ public class RoleServiceImpl implements IRoleService {
     @Override
     public Result<List<Long>> getRoleMenuIds(Long roleId) {
         try {
+            String cacheKey = "role:menu:" + roleId;
+            if (redisUtil.hasKey(cacheKey)) {
+                Object cached = redisUtil.get(cacheKey);
+                if (cached instanceof List) {
+                    log.debug("从缓存获取角色菜单，roleId: {}", roleId);
+                    return Result.success((List<Long>) cached);
+                }
+            }
+
             Optional<RoleEO> optional = roleRepository.findById(roleId);
             if (!optional.isPresent()) {
                 return Result.fail("角色不存在");
@@ -184,6 +200,9 @@ public class RoleServiceImpl implements IRoleService {
             List<Long> menuIds = roleMenus.stream()
                     .map(RoleMenuEO::getMenuId)
                     .collect(Collectors.toList());
+
+            redisUtil.set(cacheKey, menuIds, 60);
+            log.debug("缓存角色菜单，roleId: {}, 数量: {}", roleId, menuIds.size());
 
             return Result.success(menuIds);
         } catch (Exception e) {
