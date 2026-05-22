@@ -1,6 +1,8 @@
 package com.github.ylyan2015.service;
 
 import com.github.ylyan2015.common.Result;
+import com.github.ylyan2015.dto.LoginRequestDto;
+import com.github.ylyan2015.dto.LoginResponseDto;
 import com.github.ylyan2015.dto.UserDto;
 
 import java.util.List;
@@ -39,4 +41,9 @@ public interface IUserService {
      * 为用户分配角色
      */
     Result<String> assignRolesToUser(Long userId, List<Long> roleIds);
+    
+    /**
+     * 用户登录
+     */
+    Result<LoginResponseDto> login(LoginRequestDto loginRequest);
 }

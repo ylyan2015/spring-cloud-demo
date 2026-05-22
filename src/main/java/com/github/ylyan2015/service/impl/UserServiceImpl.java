@@ -3,6 +3,8 @@ package com.github.ylyan2015.service.impl;
 import com.github.ylyan2015.common.Result;
 import com.github.ylyan2015.dao.UserRepository;
 import com.github.ylyan2015.dao.UserRoleRepository;
+import com.github.ylyan2015.dto.LoginRequestDto;
+import com.github.ylyan2015.dto.LoginResponseDto;
 import com.github.ylyan2015.dto.UserDto;
 import com.github.ylyan2015.entity.UserEO;
 import com.github.ylyan2015.entity.UserRoleEO;
@@ -50,9 +52,8 @@ public class UserServiceImpl implements IUserService {
             UserEO userEO = new UserEO();
             BeanUtils.copyProperties(userDto, userEO);
             
-            // 对密码进行加密处理
-            String salt = smCryptoUtil.generateSalt();
-            String encryptedPassword = smCryptoUtil.sm3HashWithSalt(userDto.getPassword(), salt);
+            // 使用用户名作为salt对密码进行加密处理
+            String encryptedPassword = smCryptoUtil.sm3HashWithSalt(userDto.getPassword(), userDto.getUsername());
             userEO.setPassword(encryptedPassword);
             
             UserEO savedUser = userRepository.save(userEO);
@@ -92,7 +93,8 @@ public class UserServiceImpl implements IUserService {
             
             // 如果提供了新密码，则更新密码
             if (userDto.getPassword() != null && !userDto.getPassword().trim().isEmpty()) {
-                String salt = smCryptoUtil.generateSalt();
+                // 使用当前用户名（可能是新的）作为salt
+                String salt = userDto.getUsername() != null ? userDto.getUsername() : optional.get().getUsername();
                 String encryptedPassword = smCryptoUtil.sm3HashWithSalt(userDto.getPassword(), salt);
                 userEO.setPassword(encryptedPassword);
             } else {
@@ -205,6 +207,70 @@ public class UserServiceImpl implements IUserService {
         } catch (Exception e) {
             log.error("查询用户列表失败", e);
             return Result.fail("查询用户列表失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    public Result<LoginResponseDto> login(LoginRequestDto loginRequest) {
+        try {
+            // 参数校验
+            if (loginRequest.getUsername() == null || loginRequest.getUsername().trim().isEmpty()) {
+                return Result.fail("用户名不能为空");
+            }
+            if (loginRequest.getPassword() == null || loginRequest.getPassword().trim().isEmpty()) {
+                return Result.fail("密码不能为空");
+            }
+
+            // 根据用户名查询用户
+            Optional<UserEO> userOptional = userRepository.findByUsername(loginRequest.getUsername());
+            if (!userOptional.isPresent()) {
+                return Result.fail("用户名或密码错误");
+            }
+
+            UserEO user = userOptional.get();
+
+            // 检查用户状态
+            if (user.getStatus() != null && user.getStatus() == 0) {
+                return Result.fail("用户已被禁用");
+            }
+
+            // 使用用户名作为salt验证密码
+            String inputPasswordHash = smCryptoUtil.sm3HashWithSalt(loginRequest.getPassword(), loginRequest.getUsername());
+            
+            if (!user.getPassword().equals(inputPasswordHash)) {
+                return Result.fail("用户名或密码错误");
+            }
+
+            // 构建登录响应
+            LoginResponseDto responseDto = new LoginResponseDto();
+            responseDto.setUserId(user.getId());
+            responseDto.setUsername(user.getUsername());
+            responseDto.setNickname(user.getNickname());
+            responseDto.setAvatar(user.getAvatar());
+
+            // 获取用户角色
+            List<UserRoleEO> userRoles = userRoleRepository.findByUserId(user.getId());
+            if (!userRoles.isEmpty()) {
+                List<Long> roleIds = userRoles.stream()
+                        .map(UserRoleEO::getRoleId)
+                        .collect(Collectors.toList());
+                responseDto.setRoleIds(roleIds);
+            }
+
+            // 生成简单的token
+            String token = smCryptoUtil.sm3Hash(String.valueOf(user.getId()) + System.currentTimeMillis());
+            responseDto.setToken(token);
+
+            // 将登录信息缓存到Redis
+            String tokenKey = "login:token:" + token;
+            redisUtil.set(tokenKey, responseDto, 7200); // 2小时过期
+
+            log.info("用户登录成功，userId: {}, username: {}", user.getId(), user.getUsername());
+            return Result.success(responseDto);
+
+        } catch (Exception e) {
+            log.error("用户登录失败", e);
+            return Result.fail("登录失败：" + e.getMessage());
         }
     }
 

@@ -2,6 +2,8 @@ package com.github.ylyan2015.controller;
 
 
 import com.github.ylyan2015.common.Result;
+import com.github.ylyan2015.dto.LoginRequestDto;
+import com.github.ylyan2015.dto.LoginResponseDto;
 import com.github.ylyan2015.dto.UserDto;
 import com.github.ylyan2015.service.IUserService;
 import org.springframework.web.bind.annotation.*;
@@ -65,5 +67,13 @@ public class UserController {
     @PostMapping("/assign-roles")
     public Result<String> assignRoles(@RequestParam Long userId, @RequestBody List<Long> roleIds) {
         return userService.assignRolesToUser(userId, roleIds);
+    }
+
+    /**
+     * 用户登录
+     */
+    @PostMapping("/login")
+    public Result<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequest) {
+        return userService.login(loginRequest);
     }
 }
