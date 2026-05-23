@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统登录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 1rem;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .logo-section h1 {
+            font-size: 1.8rem;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .logo-section p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #ffffff;
+        }
+
+        .form-control::placeholder {
+            color: #999;
+        }
+
+        .input-icon {
+            position: relative;
+        }
+
+        .input-icon .icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 1.1rem;
+        }
+
+        .input-icon .form-control {
+            padding-left: 42px;
+        }
+
+        .remember-me {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .remember-me label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .remember-me input[type="checkbox"] {
+            margin-right: 0.5rem;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.9rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .btn-login:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background: #ffeaea;
+            border-radius: 6px;
+            display: none;
+            text-align: center;
+        }
+
+        .footer-info {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 2rem;
+            font-size: 0.85rem;
+        }
+
+        .footer-info a {
+            color: #fff;
+            text-decoration: none;
+            margin: 0 0.5rem;
+        }
+
+        .footer-info a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <div class="login-card">
+        <div class="logo-section">
+            <div class="logo-icon">🔐</div>
+            <h1>欢迎登录</h1>
+            <p>请输入您的账号信息</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label">用户名</label>
+                <div class="input-icon">
+                    <span class="icon">👤</span>
+                    <input type="text" id="username" class="form-control" placeholder="请输入用户名" required autocomplete="username">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">密码</label>
+                <div class="input-icon">
+                    <span class="icon">🔒</span>
+                    <input type="password" id="password" class="form-control" placeholder="请输入密码" required autocomplete="current-password">
+                </div>
+            </div>
+
+            <div class="remember-me">
+                <label>
+                    <input type="checkbox" id="rememberMe"> 记住用户名
+                </label>
+                <label>
+                    <input type="checkbox" id="secureLogin" checked> 安全登录
+                </label>
+            </div>
+
+            <button type="submit" class="btn-login" id="loginBtn">登 录</button>
+
+            <div class="error-message" id="errorMsg"></div>
+        </form>
+    </div>
+
+    <div class="footer-info">
+        <p>© 2026 系统登录 | <a href="#">使用帮助</a> | <a href="#">技术支持</a></p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const loginBtn = document.getElementById('loginBtn');
+        const errorMsg = document.getElementById('errorMsg');
+
+        if (!username || !password) {
+            errorMsg.textContent = '用户名和密码不能为空';
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        // 隐藏之前的错误信息
+        errorMsg.style.display = 'none';
+
+        // 禁用登录按钮，防止重复提交
+        loginBtn.disabled = true;
+        loginBtn.textContent = '登录中...';
+
+        try {
+            const response = await fetch('/user/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.code === 200) {
+                // 登录成功，跳转到主页
+                if (result.data && result.data.token) {
+                    localStorage.setItem('token', result.data.token);
+                }
+                window.location.href = '/index';
+            } else {
+                errorMsg.textContent = result.msg || '登录失败，请检查用户名和密码';
+                errorMsg.style.display = 'block';
+            }
+        } catch (error) {
+            errorMsg.textContent = '网络请求失败，请稍后重试';
+            errorMsg.style.display = 'block';
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.textContent = '登 录';
+        }
+    });
+</script>
+</body>
+</html>
