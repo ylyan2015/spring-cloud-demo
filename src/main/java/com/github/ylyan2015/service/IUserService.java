@@ -46,4 +46,9 @@ public interface IUserService {
      * 用户登录
      */
     Result<LoginResponseDto> login(LoginRequestDto loginRequest);
+    
+    /**
+     * 用户登出
+     */
+    Result<String> logout(String token);
 }

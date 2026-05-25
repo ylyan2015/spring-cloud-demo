@@ -76,4 +76,12 @@ public class UserController {
     public Result<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequest) {
         return userService.login(loginRequest);
     }
+
+    /**
+     * 用户登出
+     */
+    @PostMapping("/logout")
+    public Result<String> logout(@RequestParam String token) {
+        return userService.logout(token);
+    }
 }

@@ -300,6 +300,42 @@ public class UserServiceImpl implements IUserService {
         }
     }
 
+    @Override
+    public Result<String> logout(String token) {
+        try {
+            if (token == null || token.trim().isEmpty()) {
+                return Result.fail("token不能为空");
+            }
+
+            String tokenKey = "login:token:" + token;
+            
+            if (redisUtil.hasKey(tokenKey)) {
+                Object cached = redisUtil.get(tokenKey);
+                if (cached instanceof LoginResponseDto) {
+                    LoginResponseDto loginInfo = (LoginResponseDto) cached;
+                    Long userId = loginInfo.getUserId();
+                    
+                    String userKey = "user:" + userId;
+                    String roleCacheKey = "user:role:" + userId;
+                    
+                    redisUtil.del(tokenKey, userKey, roleCacheKey);
+                    
+                    log.info("用户登出成功，userId: {}, username: {}", userId, loginInfo.getUsername());
+                } else {
+                    redisUtil.del(tokenKey);
+                    log.info("用户登出成功，token已清除");
+                }
+            } else {
+                log.warn("token不存在或已过期: {}", token);
+            }
+            
+            return Result.success("登出成功");
+        } catch (Exception e) {
+            log.error("用户登出失败", e);
+            return Result.fail("登出失败：" + e.getMessage());
+        }
+    }
+
     /**
      * 批量分配角色
      */

@@ -4,9 +4,11 @@ import com.github.ylyan2015.common.Result;
 import com.github.ylyan2015.dao.MenuRepository;
 import com.github.ylyan2015.dao.RoleMenuRepository;
 import com.github.ylyan2015.dto.MenuDto;
+import com.github.ylyan2015.dto.OperationLogDto;
 import com.github.ylyan2015.entity.MenuEO;
 import com.github.ylyan2015.entity.RoleMenuEO;
 import com.github.ylyan2015.service.IMenuService;
+import com.github.ylyan2015.service.IOperationLogService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,9 @@ public class MenuServiceImpl implements IMenuService {
     @Resource
     private RoleMenuRepository roleMenuRepository;
 
+    @Resource
+    private IOperationLogService operationLogService;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result<MenuDto> addMenu(MenuDto menuDto) {
@@ -44,10 +49,15 @@ public class MenuServiceImpl implements IMenuService {
 
             MenuEO savedMenu = menuRepository.save(menuEO);
 
+            saveOperationLog(null, "菜单管理", "新增", "新增菜单：" + menuDto.getMenuName(), 
+                    "POST", "/menu/add", menuDto, savedMenu, true, null);
+
             MenuDto result = convertToDto(savedMenu);
             return Result.success(result);
         } catch (Exception e) {
             log.error("新增菜单失败", e);
+            saveOperationLog(null, "菜单管理", "新增", "新增菜单失败：" + menuDto.getMenuName(), 
+                    "POST", "/menu/add", menuDto, null, false, e.getMessage());
             return Result.fail("新增菜单失败：" + e.getMessage());
         }
     }
@@ -66,10 +76,15 @@ public class MenuServiceImpl implements IMenuService {
 
             MenuEO updatedMenu = menuRepository.save(menuEO);
 
+            saveOperationLog(null, "菜单管理", "修改", "修改菜单：" + menuDto.getMenuName(), 
+                    "PUT", "/menu/update", menuDto, updatedMenu, true, null);
+
             MenuDto result = convertToDto(updatedMenu);
             return Result.success(result);
         } catch (Exception e) {
             log.error("修改菜单失败", e);
+            saveOperationLog(null, "菜单管理", "修改", "修改菜单失败：" + menuDto.getMenuName(), 
+                    "PUT", "/menu/update", menuDto, null, false, e.getMessage());
             return Result.fail("修改菜单失败：" + e.getMessage());
         }
     }
@@ -83,6 +98,8 @@ public class MenuServiceImpl implements IMenuService {
                 return Result.fail("菜单不存在");
             }
 
+            String menuName = optional.get().getMenuName();
+
             List<RoleMenuEO> roleMenus = roleMenuRepository.findByMenuId(id);
             if (!roleMenus.isEmpty()) {
                 return Result.fail("该菜单已被角色使用，无法删除");
@@ -95,9 +112,14 @@ public class MenuServiceImpl implements IMenuService {
 
             menuRepository.deleteById(id);
 
+            saveOperationLog(null, "菜单管理", "删除", "删除菜单：" + menuName, 
+                    "DELETE", "/menu/delete/" + id, null, menuName, true, null);
+
             return Result.success("删除成功");
         } catch (Exception e) {
             log.error("删除菜单失败", e);
+            saveOperationLog(null, "菜单管理", "删除", "删除菜单失败，id：" + id, 
+                    "DELETE", "/menu/delete/" + id, null, null, false, e.getMessage());
             return Result.fail("删除菜单失败：" + e.getMessage());
         }
     }
@@ -186,5 +208,30 @@ public class MenuServiceImpl implements IMenuService {
         MenuDto menuDto = new MenuDto();
         BeanUtils.copyProperties(menuEO, menuDto);
         return menuDto;
+    }
+
+    /**
+     * 保存操作日志
+     */
+    private void saveOperationLog(Long userId, String module, String operationType, String description,
+                                  String requestMethod, String requestUrl, Object requestParams,
+                                  Object responseResult, boolean success, String errorMsg) {
+        try {
+            OperationLogDto logDto = new OperationLogDto();
+            logDto.setUserId(userId != null ? userId : 0L);
+            logDto.setUsername("system");
+            logDto.setModule(module);
+            logDto.setOperationType(operationType);
+            logDto.setDescription(description);
+            logDto.setRequestMethod(requestMethod);
+            logDto.setRequestUrl(requestUrl);
+            logDto.setRequestParams(requestParams != null ? com.alibaba.fastjson.JSON.toJSONString(requestParams) : null);
+            logDto.setResponseResult(responseResult != null ? com.alibaba.fastjson.JSON.toJSONString(responseResult) : null);
+            logDto.setStatus(success ? 1 : 0);
+            logDto.setErrorMsg(errorMsg);
+            operationLogService.saveOperationLog(logDto);
+        } catch (Exception e) {
+            log.error("记录操作日志失败", e);
+        }
     }
 }
