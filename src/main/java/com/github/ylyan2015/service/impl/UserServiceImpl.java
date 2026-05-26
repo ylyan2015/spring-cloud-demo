@@ -3,12 +3,15 @@ package com.github.ylyan2015.service.impl;
 import com.github.ylyan2015.common.Result;
 import com.github.ylyan2015.dao.UserRepository;
 import com.github.ylyan2015.dao.UserRoleRepository;
+import com.github.ylyan2015.dto.LoginLogDto;
 import com.github.ylyan2015.dto.LoginRequestDto;
 import com.github.ylyan2015.dto.LoginResponseDto;
 import com.github.ylyan2015.dto.UserDto;
 import com.github.ylyan2015.entity.UserEO;
 import com.github.ylyan2015.entity.UserRoleEO;
+import com.github.ylyan2015.service.ILoginLogService;
 import com.github.ylyan2015.service.IUserService;
+import com.github.ylyan2015.util.IpUtil;
 import com.github.ylyan2015.util.RedisUtil;
 import com.github.ylyan2015.util.SmCryptoUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -39,6 +43,12 @@ public class UserServiceImpl implements IUserService {
 
     @Resource
     private SmCryptoUtil smCryptoUtil;
+
+    @Resource
+    private ILoginLogService loginLogService;
+
+    @Resource
+    private IpUtil ipUtil;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -211,19 +221,22 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public Result<LoginResponseDto> login(LoginRequestDto loginRequest) {
+    public Result<LoginResponseDto> login(LoginRequestDto loginRequest, HttpServletRequest request) {
         try {
             // 参数校验
             if (loginRequest.getUsername() == null || loginRequest.getUsername().trim().isEmpty()) {
+                recordLoginLog(null, loginRequest.getUsername(), "login", 0, request, "用户名不能为空");
                 return Result.fail("用户名不能为空");
             }
             if (loginRequest.getPassword() == null || loginRequest.getPassword().trim().isEmpty()) {
+                recordLoginLog(null, loginRequest.getUsername(), "login", 0, request, "密码不能为空");
                 return Result.fail("密码不能为空");
             }
 
             // 根据用户名查询用户
             Optional<UserEO> userOptional = userRepository.findByUsername(loginRequest.getUsername());
             if (!userOptional.isPresent()) {
+                recordLoginLog(null, loginRequest.getUsername(), "login", 0, request, "用户名或密码错误");
                 return Result.fail("用户名或密码错误");
             }
 
@@ -231,6 +244,7 @@ public class UserServiceImpl implements IUserService {
 
             // 检查用户状态
             if (user.getStatus() != null && user.getStatus() == 0) {
+                recordLoginLog(user.getId(), user.getUsername(), "login", 0, request, "用户已被禁用");
                 return Result.fail("用户已被禁用");
             }
 
@@ -238,6 +252,7 @@ public class UserServiceImpl implements IUserService {
             String inputPasswordHash = smCryptoUtil.sm3HashWithSalt(loginRequest.getPassword(), loginRequest.getUsername());
             
             if (!user.getPassword().equals(inputPasswordHash)) {
+                recordLoginLog(user.getId(), user.getUsername(), "login", 0, request, "用户名或密码错误");
                 return Result.fail("用户名或密码错误");
             }
 
@@ -265,11 +280,15 @@ public class UserServiceImpl implements IUserService {
             String tokenKey = "login:token:" + token;
             redisUtil.set(tokenKey, responseDto, 7200); // 2小时过期
 
+            // 记录登录成功日志
+            recordLoginLog(user.getId(), user.getUsername(), "login", 1, request, null);
+
             log.info("用户登录成功，userId: {}, username: {}", user.getId(), user.getUsername());
             return Result.success(responseDto);
 
         } catch (Exception e) {
             log.error("用户登录失败", e);
+            recordLoginLog(null, loginRequest.getUsername(), "login", 0, request, "登录异常：" + e.getMessage());
             return Result.fail("登录失败：" + e.getMessage());
         }
     }
@@ -301,7 +320,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public Result<String> logout(String token) {
+    public Result<String> logout(String token, HttpServletRequest request) {
         try {
             if (token == null || token.trim().isEmpty()) {
                 return Result.fail("token不能为空");
@@ -314,13 +333,17 @@ public class UserServiceImpl implements IUserService {
                 if (cached instanceof LoginResponseDto) {
                     LoginResponseDto loginInfo = (LoginResponseDto) cached;
                     Long userId = loginInfo.getUserId();
+                    String username = loginInfo.getUsername();
                     
                     String userKey = "user:" + userId;
                     String roleCacheKey = "user:role:" + userId;
                     
                     redisUtil.del(tokenKey, userKey, roleCacheKey);
                     
-                    log.info("用户登出成功，userId: {}, username: {}", userId, loginInfo.getUsername());
+                    // 记录登出成功日志
+                    recordLoginLog(userId, username, "logout", 1, request, null);
+                    
+                    log.info("用户登出成功，userId: {}, username: {}", userId, username);
                 } else {
                     redisUtil.del(tokenKey);
                     log.info("用户登出成功，token已清除");
@@ -358,5 +381,112 @@ public class UserServiceImpl implements IUserService {
         UserDto userDto = new UserDto();
         BeanUtils.copyProperties(userEO, userDto);
         return userDto;
+    }
+
+    /**
+     * 记录登录日志
+     */
+    private void recordLoginLog(Long userId, String username, String operationType, 
+                                Integer status, HttpServletRequest request, String errorMsg) {
+        try {
+            LoginLogDto loginLog = new LoginLogDto();
+            loginLog.setUserId(userId);
+            loginLog.setUsername(username);
+            loginLog.setOperationType(operationType);
+            loginLog.setStatus(status);
+            
+            // 获取IP地址
+            String ipAddress = getClientIp(request);
+            loginLog.setIpAddress(ipAddress);
+            
+            // 解析IP地址
+            if (ipAddress != null && !ipAddress.isEmpty()) {
+                loginLog.setProvince(ipUtil.getProvince(ipAddress));
+                loginLog.setCity(ipUtil.getCity(ipAddress));
+                loginLog.setDistrict(ipUtil.getDistrict(ipAddress));
+                loginLog.setAddress(ipUtil.getAddress(ipAddress));
+            }
+            
+            // 获取浏览器和操作系统信息
+            String userAgent = request.getHeader("User-Agent");
+            if (userAgent != null) {
+                loginLog.setBrowser(parseBrowser(userAgent));
+                loginLog.setOs(parseOs(userAgent));
+            }
+            
+            loginLog.setErrorMsg(errorMsg);
+            
+            loginLogService.saveLoginLog(loginLog);
+        } catch (Exception e) {
+            log.error("记录登录日志失败", e);
+        }
+    }
+
+    /**
+     * 获取客户端真实IP
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        
+        // 对于通过多个代理的情况，第一个IP为客户端真实IP
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        
+        return ip;
+    }
+
+    /**
+     * 解析浏览器信息
+     */
+    private String parseBrowser(String userAgent) {
+        if (userAgent.contains("Chrome")) {
+            return "Chrome";
+        } else if (userAgent.contains("Firefox")) {
+            return "Firefox";
+        } else if (userAgent.contains("Safari")) {
+            return "Safari";
+        } else if (userAgent.contains("Edge")) {
+            return "Edge";
+        } else if (userAgent.contains("MSIE") || userAgent.contains("Trident")) {
+            return "IE";
+        }
+        return "Unknown";
+    }
+
+    /**
+     * 解析操作系统信息
+     */
+    private String parseOs(String userAgent) {
+        if (userAgent.contains("Windows NT 10.0")) {
+            return "Windows 10";
+        } else if (userAgent.contains("Windows NT 6.3")) {
+            return "Windows 8.1";
+        } else if (userAgent.contains("Windows NT 6.2")) {
+            return "Windows 8";
+        } else if (userAgent.contains("Windows NT 6.1")) {
+            return "Windows 7";
+        } else if (userAgent.contains("Mac OS X")) {
+            return "Mac OS X";
+        } else if (userAgent.contains("Linux")) {
+            return "Linux";
+        } else if (userAgent.contains("Android")) {
+            return "Android";
+        } else if (userAgent.contains("iPhone") || userAgent.contains("iPad")) {
+            return "iOS";
+        }
+        return "Unknown";
     }
 }

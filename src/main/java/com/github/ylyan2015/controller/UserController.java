@@ -9,6 +9,7 @@ import com.github.ylyan2015.service.IUserService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -73,15 +74,15 @@ public class UserController {
      * 用户登录
      */
     @PostMapping("/login")
-    public Result<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequest) {
-        return userService.login(loginRequest);
+    public Result<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequest, HttpServletRequest request) {
+        return userService.login(loginRequest, request);
     }
 
     /**
      * 用户登出
      */
     @PostMapping("/logout")
-    public Result<String> logout(@RequestParam String token) {
-        return userService.logout(token);
+    public Result<String> logout(@RequestParam String token, HttpServletRequest request) {
+        return userService.logout(token, request);
     }
 }
