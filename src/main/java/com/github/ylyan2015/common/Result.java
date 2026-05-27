@@ -1,5 +1,6 @@
 package com.github.ylyan2015.common;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
@@ -7,21 +8,25 @@ import lombok.Data;
  * @param <T> 数据类型
  */
 @Data
+@Schema(description = "统一返回结果")
 public class Result<T> {
     
     /**
      * 响应码
      */
+    @Schema(description = "响应码", example = "200")
     private int code;
     
     /**
      * 响应消息
      */
+    @Schema(description = "响应消息", example = "成功")
     private String msg;
     
     /**
      * 响应数据
      */
+    @Schema(description = "响应数据")
     private T data;
 
     /**

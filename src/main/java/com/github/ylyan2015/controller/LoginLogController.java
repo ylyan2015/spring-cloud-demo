@@ -3,6 +3,9 @@ package com.github.ylyan2015.controller;
 import com.github.ylyan2015.common.Result;
 import com.github.ylyan2015.dto.LoginLogDto;
 import com.github.ylyan2015.service.ILoginLogService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -11,6 +14,7 @@ import java.util.List;
 /**
  * 登录日志控制器
  */
+@Tag(name = "登录日志", description = "用户登录登出日志查询接口")
 @RestController
 @RequestMapping("/login-log")
 public class LoginLogController {
@@ -21,6 +25,8 @@ public class LoginLogController {
     /**
      * 根据用户ID查询登录日志
      */
+    @Operation(summary = "查询用户登录日志", description = "根据用户ID查询登录登出记录")
+    @Parameter(name = "userId", description = "用户ID", required = true, example = "1")
     @GetMapping("/user/{userId}")
     public Result<List<LoginLogDto>> getLogsByUserId(@PathVariable Long userId) {
         return loginLogService.getLogsByUserId(userId);
@@ -29,6 +35,8 @@ public class LoginLogController {
     /**
      * 根据用户名查询登录日志
      */
+    @Operation(summary = "根据用户名查询登录日志", description = "根据用户名查询登录登出记录")
+    @Parameter(name = "username", description = "用户名", required = true, example = "admin")
     @GetMapping("/username/{username}")
     public Result<List<LoginLogDto>> getLogsByUsername(@PathVariable String username) {
         return loginLogService.getLogsByUsername(username);
@@ -37,6 +45,7 @@ public class LoginLogController {
     /**
      * 查询所有登录日志
      */
+    @Operation(summary = "查询所有登录日志", description = "查询所有用户的登录登出记录")
     @GetMapping("/list")
     public Result<List<LoginLogDto>> getAllLogs() {
         return loginLogService.getAllLogs();
