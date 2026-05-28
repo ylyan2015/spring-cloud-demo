@@ -30,6 +30,21 @@ public class Result<T> {
     private T data;
 
     /**
+     * 默认构造函数
+     */
+    public Result() {
+    }
+
+    /**
+     * 带参数的构造函数
+     */
+    public Result(int code, String msg, T data) {
+        this.code = code;
+        this.msg = msg;
+        this.data = data;
+    }
+
+    /**
      * 成功响应
      */
     public static <T> Result<T> success(T data) {
@@ -41,11 +56,32 @@ public class Result<T> {
     }
 
     /**
+     * 成功响应（带自定义消息）
+     */
+    public static <T> Result<T> success(String msg, T data) {
+        Result<T> r = new Result<>();
+        r.setCode(200);
+        r.setMsg(msg);
+        r.setData(data);
+        return r;
+    }
+
+    /**
      * 失败响应
      */
     public static <T> Result<T> fail(String msg) {
         Result<T> r = new Result<>();
         r.setCode(500);
+        r.setMsg(msg);
+        return r;
+    }
+
+    /**
+     * 失败响应（带自定义状态码）
+     */
+    public static <T> Result<T> fail(int code, String msg) {
+        Result<T> r = new Result<>();
+        r.setCode(code);
         r.setMsg(msg);
         return r;
     }
