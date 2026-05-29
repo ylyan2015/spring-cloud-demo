@@ -16,3 +16,10 @@ spring:
   web:
     resources:
       static-locations: classpath:/static/,classpath:/public/,classpath:/resources/,classpath:/META-INF/resources/
+
+# JWT配置
+jwt:
+  secret: c3ByaW5nQ2xvdWREZW1vSnd0U2VjcmV0S2V5MjAyNkZvckF1dGhlbnRpY2F0aW9u # Base64编码的密钥（至少32字节）
+  expiration: 7200 # token过期时间（秒），默认2小时
+  header: Authorization # HTTP请求头名称
+  token-prefix: "Bearer " # token前缀

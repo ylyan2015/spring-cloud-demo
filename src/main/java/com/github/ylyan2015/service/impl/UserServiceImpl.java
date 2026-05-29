@@ -12,6 +12,7 @@ import com.github.ylyan2015.entity.UserRoleEO;
 import com.github.ylyan2015.service.ILoginLogService;
 import com.github.ylyan2015.service.IUserService;
 import com.github.ylyan2015.util.IpUtil;
+import com.github.ylyan2015.util.JwtUtil;
 import com.github.ylyan2015.util.RedisUtil;
 import com.github.ylyan2015.util.SmCryptoUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +50,9 @@ public class UserServiceImpl implements IUserService {
 
     @Resource
     private IpUtil ipUtil;
+
+    @Resource
+    private JwtUtil jwtUtil;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -272,13 +276,13 @@ public class UserServiceImpl implements IUserService {
                 responseDto.setRoleIds(roleIds);
             }
 
-            // 生成简单的token
-            String token = smCryptoUtil.sm3Hash(String.valueOf(user.getId()) + System.currentTimeMillis());
+            // 生成JWT token
+            String token = jwtUtil.generateToken(user.getId(), user.getUsername());
             responseDto.setToken(token);
 
-            // 将登录信息缓存到Redis
+            // 将登录信息缓存到Redis（可选，用于快速查询和强制下线）
             String tokenKey = "login:token:" + token;
-            redisUtil.set(tokenKey, responseDto, 7200); // 2小时过期
+            redisUtil.set(tokenKey, responseDto, jwtUtil.getExpirationDateFromToken(token).getTime() / 1000 - System.currentTimeMillis() / 1000);
 
             // 记录登录成功日志
             recordLoginLog(user.getId(), user.getUsername(), "login", 1, request, null);
@@ -326,30 +330,30 @@ public class UserServiceImpl implements IUserService {
                 return Result.fail("token不能为空");
             }
 
+            // 从JWT中获取用户信息
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            String username = jwtUtil.getUsernameFromToken(token);
+
             String tokenKey = "login:token:" + token;
             
+            // 删除Redis中的token缓存
             if (redisUtil.hasKey(tokenKey)) {
-                Object cached = redisUtil.get(tokenKey);
-                if (cached instanceof LoginResponseDto) {
-                    LoginResponseDto loginInfo = (LoginResponseDto) cached;
-                    Long userId = loginInfo.getUserId();
-                    String username = loginInfo.getUsername();
-                    
-                    String userKey = "user:" + userId;
-                    String roleCacheKey = "user:role:" + userId;
-                    
-                    redisUtil.del(tokenKey, userKey, roleCacheKey);
-                    
-                    // 记录登出成功日志
-                    recordLoginLog(userId, username, "logout", 1, request, null);
-                    
-                    log.info("用户登出成功，userId: {}, username: {}", userId, username);
-                } else {
-                    redisUtil.del(tokenKey);
-                    log.info("用户登出成功，token已清除");
-                }
+                redisUtil.del(tokenKey);
+            }
+            
+            // 清除用户相关缓存
+            if (userId != null) {
+                String userKey = "user:" + userId;
+                String roleCacheKey = "user:role:" + userId;
+                redisUtil.del(userKey, roleCacheKey);
+            }
+            
+            // 记录登出成功日志
+            if (username != null) {
+                recordLoginLog(userId, username, "logout", 1, request, null);
+                log.info("用户登出成功，userId: {}, username: {}", userId, username);
             } else {
-                log.warn("token不存在或已过期: {}", token);
+                log.info("用户登出成功，token已清除");
             }
             
             return Result.success("登出成功");
