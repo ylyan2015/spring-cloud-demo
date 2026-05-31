@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>系统登录</title>
     <style>
         * {
@@ -208,7 +208,8 @@
                 <label class="form-label">用户名</label>
                 <div class="input-icon">
                     <span class="icon">👤</span>
-                    <input type="text" id="username" class="form-control" placeholder="请输入用户名" required autocomplete="username">
+                    <input autocomplete="username" class="form-control" id="username" placeholder="请输入用户名" required
+                           type="text">
                 </div>
             </div>
 
@@ -216,20 +217,21 @@
                 <label class="form-label">密码</label>
                 <div class="input-icon">
                     <span class="icon">🔒</span>
-                    <input type="password" id="password" class="form-control" placeholder="请输入密码" required autocomplete="current-password">
+                    <input autocomplete="current-password" class="form-control" id="password" placeholder="请输入密码" required
+                           type="password">
                 </div>
             </div>
 
             <div class="remember-me">
                 <label>
-                    <input type="checkbox" id="rememberMe"> 记住用户名
+                    <input id="rememberMe" type="checkbox"> 记住用户名
                 </label>
                 <label>
-                    <input type="checkbox" id="secureLogin" checked> 安全登录
+                    <input checked id="secureLogin" type="checkbox"> 安全登录
                 </label>
             </div>
 
-            <button type="submit" class="btn-login" id="loginBtn">登 录</button>
+            <button class="btn-login" id="loginBtn" type="submit">登 录</button>
 
             <div class="error-message" id="errorMsg"></div>
         </form>
@@ -241,7 +243,7 @@
 </div>
 
 <script>
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const username = document.getElementById('username').value.trim();

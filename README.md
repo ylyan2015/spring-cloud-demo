@@ -64,46 +64,46 @@
 - javax.annotation-api: 1.3.2（JDK 11 注解支持）
 
 ## 项目结构
-```
-spring-cloud-demo/
-├── src/
-│   ├── main/
-│   │   ├── java/com/github/ylyan2015/
-│   │   │   ├── common/           # 公共类（Result、SystemConstants）
-│   │   │   ├── config/           # 配置类（JWT、Redis、Swagger、全局异常处理等）
-│   │   │   ├── controller/       # 控制器层
-│   │   │   │   ├── UserController.java        # 用户管理
-│   │   │   │   ├── RoleController.java        # 角色管理
-│   │   │   │   ├── MenuController.java        # 菜单管理
-│   │   │   │   ├── DictController.java        # 字典管理
-│   │   │   │   ├── LoginLogController.java    # 登录日志
-│   │   │   │   ├── OperationLogController.java # 操作日志
-│   │   │   │   ── PageController.java        # 页面路由
-│   │   │   ├── dao/              # 数据访问层（Repository）
-│   │   │   ├── dto/              # 数据传输对象
-│   │   │   ├── entity/           # 实体类（EO 后缀）
-│   │   │   ├── service/          # 业务逻辑层
-│   │   │   │   ├── impl/         # 服务实现类
-│   │   │   │   ── I*Service.java # 服务接口
-│   │   │   ├── util/             # 工具类
-│   │   │   │   ├── JwtUtil.java          # JWT 工具
-│   │   │   │   ├── SmCryptoUtil.java     # 国密加密工具
-│   │   │   │   ├── RedisUtil.java        # Redis 工具
-│   │   │   │   └── IpUtil.java           # IP 地址解析工具
-│   │   │   ├── exception/        # 自定义异常类
-│   │   │   └── SpringCloudDemoApplication.java # 启动类
-│   │   └── resources/
-│   │       ├── static/           # 静态资源（CSS、JS、图片）
-│   │       ├── templates/        # 页面模板
-│   │       ├── application-test.yml   # 测试环境配置
-│   │       ├── application-prd.yml    # 生产环境配置
-│   │       ├── bootstrap.yml          # Nacos 配置
-│   │       ├── ip2region_v4.xdb       # IPv4 地址库
-│   │       └── ip2region_v6.xdb       # IPv6 地址库
-│   └── test/                     # 测试代码
-├── target/                       # 编译输出目录
-├── pom.xml                       # Maven 配置
-└── README.md                     # 项目说明
+``` 
+spring-boot-demo/ 
+├── src/ 
+│ ├── main/ 
+│ │ ├── java/com/github/ylyan2015/springbootdemo/ 
+│ │ │ ├── common/ # 公共类（Result、SystemConstants） 
+│ │ │ ├── config/ # 配置类（JWT、Redis、Swagger、全局异常处理等） 
+│ │ │ ├── controller/ # 控制器层 
+│ │ │ │ ├── UserController.java # 用户管理 
+│ │ │ │ ├── RoleController.java # 角色管理 
+│ │ │ │ ├── MenuController.java # 菜单管理 
+│ │ │ │ ├── DictController.java # 字典管理 
+│ │ │ │ ├── LoginLogController.java # 登录日志 
+│ │ │ │ ├── OperationLogController.java # 操作日志 
+│ │ │ │ └── PageController.java # 页面路由 
+│ │ │ ├── repository/ # 数据访问层（Repository） 
+│ │ │ ├── dto/ # 数据传输对象 
+│ │ │ ├── entity/ # 实体类（EO 后缀） 
+│ │ │ ├── service/ # 业务逻辑层 
+│ │ │ │ ├── impl/ # 服务实现类 
+│ │ │ │ └── I*Service.java # 服务接口 
+│ │ │ ├── util/ # 工具类 
+│ │ │ │ ├── JwtUtil.java # JWT 工具 
+│ │ │ │ ├── SmCryptoUtil.java # 国密加密工具 
+│ │ │ │ ├── RedisUtil.java # Redis 工具 
+│ │ │ │ └── IpUtil.java # IP 地址解析工具 
+│ │ │ ├── exception/ # 自定义异常类 
+│ │ │ └── SpringBootDemoApplication.java # 启动类 
+│ │ └── resources/ 
+│ │ ├── static/ # 静态资源（CSS、JS、图片） 
+│ │ ├── templates/ # 页面模板 
+│ │ ├── application-test.yml # 测试环境配置 
+│ │ ├── application-prd.yml # 生产环境配置 
+│ │ ├── bootstrap.yml # Nacos 配置 
+│ │ ├── ip2region_v4.xdb # IPv4 地址库 
+│ │ └── ip2region_v6.xdb # IPv6 地址库 
+│ └── test/ # 测试代码 
+├── target/ # 编译输出目录 
+├── pom.xml # Maven 配置 
+└── README.md 
 ```
 ## 快速开始
 
@@ -138,7 +138,7 @@ spring.cloud.nacos.config.password=nacos
 5. **构建并启动**
 
 mvn clean package -DskipTests
-java -jar target/spring-cloud-demo-1.0.0.jar
+java -jar target/spring-boot-demo-1.0.0.jar
 
 6. **访问应用**
 
@@ -270,7 +270,7 @@ git pull
 mvn clean compile
 mvn test
 mvn clean package
-java -jar target/spring-cloud-demo-1.0.0.jar
+java -jar target/spring-boot-demo-1.0.0.jar
 
 ### 常用命令
 
