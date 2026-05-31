@@ -1,4 +1,4 @@
-# Spring Cloud Demo
+# Spring Boot Demo
 
 基于 Spring Boot 微服务架构的用户权限管理系统（单体应用）
 
